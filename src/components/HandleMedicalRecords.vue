@@ -12,17 +12,20 @@ import {
   NButton,
 } from 'naive-ui';
 import { ArchiveOutline } from '@vicons/ionicons5';
-import { read, utils, WorkSheet } from 'xlsx';
+import { read, utils, WorkSheet, writeFileXLSX } from 'xlsx';
 import { ref } from 'vue';
 // import { useMessage, useDialog } from 'naive-ui';
 import { useDialog } from 'naive-ui';
+import Dayjs from 'dayjs'
+
+window.Dayjs = Dayjs
 
 // const message = useMessage();
 const dialog = useDialog();
 
 const sheetA = ref<any>();
 const sheetB = ref<any>();
-// const sheetNew = ref<any>();
+const sheetNew = ref<any>();
 
 // 去掉所有的空格、换行、首尾空格
 const removeSpaceNewline = (str: string): string => {
@@ -35,7 +38,7 @@ const removeSpaceNewline = (str: string): string => {
 const onUpdateFileA = (fileList: UploadFileInfo[]) => {
   if (fileList[0] && fileList[0].file) {
     fileList[0].file.arrayBuffer().then((arrayBuffer) => {
-      sheetA.value = read(arrayBuffer, { type: 'buffer', cellFormula: false, cellHTML: false });
+      sheetA.value = read(arrayBuffer, { type: 'buffer' });
       console.log('sheetA.value', sheetA.value);
     });
   }
@@ -75,6 +78,7 @@ const handleNewSheet = () => {
   tableHeaderA = tableHeaderA.map((item: string) => removeSpaceNewline(item))
   console.log('tableHeaderA', tableHeaderA);
   const 客户姓名key = tableHeaderA[1]
+  const 初诊日期key = tableHeaderA[4]
   const 复诊日期key = tableHeaderA[5]
   const 剩余治疗次数key = tableHeaderA[6]
 
@@ -108,23 +112,48 @@ const handleNewSheet = () => {
       // 过滤表头
       .filter(item => item[客户姓名key] !== 客户姓名key && item[患者姓名key] !== 患者姓名key)
       .map(item => {
+        // if (item[客户姓名key] === '朱昌蔚' || item[患者姓名key] === '朱昌蔚') {
+        //   console.log('朱昌蔚', item, item[复诊日期key], item[复诊日期key2])
+        // }
         // 剩余治疗次数为空时赋值0
         item[剩余治疗次数key] = item[剩余治疗次数key] || 0
         // 处理患者姓名的格式问题
-        if (item[客户姓名key]) {
-          item[客户姓名key] = removeSpaceNewline(item[客户姓名key])
-        }
-        if (item[患者姓名key]) {
-          item[患者姓名key] = removeSpaceNewline(item[患者姓名key])
-        }
+        if (item[客户姓名key]) item[客户姓名key] = removeSpaceNewline(item[客户姓名key])
+        if (item[患者姓名key]) item[患者姓名key] = removeSpaceNewline(item[患者姓名key])
+        // 处理就诊号补零
+        // item[就诊号key] = item[就诊号key] && String(item[就诊号key]).padStart(6,'0')
+        // 处理日期
+        if (item[初诊日期key]) item[初诊日期key] = formatDate(item[初诊日期key])
+        if (item[复诊日期key]) item[复诊日期key] = formatDate(item[复诊日期key])
+        if (item[复诊日期key2]) item[复诊日期key2] = formatDate(item[复诊日期key2])
         return item
       })
 
   }
 
+  const formatDate = (str: any) => {
+    // const formatTemp = 'YYYY-MM-DD'
+    const invalidDate = '无效的日期数据，请复查'
+    if (str) {
+      if (typeof str === 'number') {
+        // return Dayjs('1900/1/1').add(str - 2, 'day').format(formatTemp)
+        return str
+      } else if (Dayjs(str).isValid()) {
+        // return Dayjs(str).format(formatTemp)
+        return Dayjs(str).diff('1900', 'day') + 2
+      } else {
+        return invalidDate
+      }
+    } else {
+      return invalidDate
+    }
+  }
 
+
+  // 以【正畸老顾客_总合计人数】表生成基准数据
   const targetArr = 正畸老顾客sheet_to_arr(正畸老顾客_总合计人数, tableHeaderA)
-  console.log('targetArr', targetArr);
+  // console.log('targetArr', targetArr);
+  // 按表格顺序合并【正畸老顾客】中的其他表数据
   sheetA.value.SheetNames.forEach((sheetName: string) => {
     if (sheetName !== 总合计人数sheetName) {
       正畸老顾客sheet_to_arr(sheetA.value.Sheets[sheetName], tableHeaderA)
@@ -146,10 +175,9 @@ const handleNewSheet = () => {
         })
     }
   });
-  console.log('targetArr', targetArr);
+  // console.log('targetArr', targetArr);
 
   // ============== 处理 每月统计的患者查询excel ===========
-
   if (!sheetB.value) {
     dialog.error({
       title: '错误',
@@ -158,8 +186,9 @@ const handleNewSheet = () => {
     return;
   }
 
+  // 合并【患者查询】中的第一张表格
   const targetArr2 = 正畸老顾客sheet_to_arr(sheetB.value.Sheets[sheetB.value.SheetNames[0]], tableHeaderB)
-  console.log('targetArr2', targetArr2);
+  // console.log('targetArr2', targetArr2);
   targetArr2
     // 合并入总合计人数表格
     .forEach(item => {
@@ -187,23 +216,16 @@ const handleNewSheet = () => {
         })
       }
     })
-  console.log('targetArr', targetArr);
+  // console.log('targetArr', targetArr);
 
+  // 创建并下载新的表格
+  sheetNew.value = utils.book_new();
+  const targetSheet = utils.json_to_sheet(targetArr)
+  // console.log('targetSheet', targetSheet)
+  const targetSheetName = Dayjs().format('YYYY-MM-DD')
+  utils.book_append_sheet(sheetNew.value, targetSheet, targetSheetName);
+  writeFileXLSX(sheetNew.value, targetSheetName + '.xlsx');
 
-  // sheetNew.value = utils.book_new();
-  // const { A2, B2, C2, D2, E2, F2, G2, H2, I2 } = 正畸老顾客_总合计人数;
-  // console.log('sheetNew.value', sheetNew.value);
-  // utils.book_append_sheet(sheetNew.value,{ });
-
-  // writeFileXLSX(sheetNew.value, '处理后的数据.xlsx');
-
-  // const newSheet = {};
-  // utils.book_append_sheet(sheetNew.value);
-  // console.log('sheetNew.value', sheetNew.value);
-
-  // if (sheetNew.value) {
-  //   writeFileXLSX(sheetNew.value,'处理后的数据.xlsx');
-  // }
 };
 </script>
 
