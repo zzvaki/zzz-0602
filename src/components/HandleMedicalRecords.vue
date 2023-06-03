@@ -18,8 +18,6 @@ import { ref } from 'vue';
 import { useDialog } from 'naive-ui';
 import Dayjs from 'dayjs'
 
-window.Dayjs = Dayjs
-
 // const message = useMessage();
 const dialog = useDialog();
 
@@ -231,7 +229,7 @@ const handleNewSheet = () => {
 
 <template>
   <n-space vertical style="padding: 20px; max-width: 800px; margin: auto">
-    <n-h1>正畸老顾客表格自动化</n-h1>
+    <n-h1>正畸老顾客表格自动化表格处理</n-h1>
     <n-text type="success">所有文件操作仅存在客户端本地，不会上传任何文件、信息。</n-text>
     <n-form ref="formRef" :show-feedback="false">
       <n-form-item label="第一步 选择正畸老顾客excel">
