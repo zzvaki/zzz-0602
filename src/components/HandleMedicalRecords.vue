@@ -5,15 +5,15 @@ import {
   NUploadDragger,
   NIcon,
   NText,
-  NForm,
-  NFormItem,
   NH1,
+  NH2,
   UploadFileInfo,
   NButton,
+  NAlert
 } from 'naive-ui';
 import { ArchiveOutline } from '@vicons/ionicons5';
 import { read, utils, WorkSheet, writeFileXLSX } from 'xlsx';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 // import { useMessage, useDialog } from 'naive-ui';
 import { useDialog } from 'naive-ui';
 import Dayjs from 'dayjs'
@@ -225,44 +225,50 @@ const handleNewSheet = () => {
   writeFileXLSX(sheetNew.value, targetSheetName + '.xlsx');
 
 };
+
+const disabledBtn = computed(()=>{
+  return !Boolean(sheetA.value) || !Boolean(sheetB.value)
+})
 </script>
 
 <template>
   <n-space vertical style="padding: 20px; max-width: 800px; margin: auto">
     <n-h1>正畸老顾客表格自动化表格处理</n-h1>
-    <n-text type="success">所有文件操作仅存在客户端本地，不会上传任何文件、信息。</n-text>
-    <n-form ref="formRef" :show-feedback="false">
-      <n-form-item label="第一步 选择正畸老顾客excel">
-        <!-- <n-input v-model:value="model.age" @keydown.enter.prevent /> -->
-        <n-upload multiple directory-dnd :max="1" :default-upload="false" :on-update:file-list="onUpdateFileA">
-          <n-upload-dragger>
-            <div style="margin-bottom: 12px">
-              <n-icon size="48" :depth="3">
-                <ArchiveOutline />
-              </n-icon>
-            </div>
-            <n-text style="font-size: 16px"> 点击或者拖动文件到该区域 </n-text>
-          </n-upload-dragger>
-        </n-upload>
-      </n-form-item>
-      <n-form-item label="第二步 选择每月统计的患者查询excel">
-        <!-- <n-input v-model:value="model.age" @keydown.enter.prevent /> -->
-        <n-upload multiple directory-dnd :max="1" :default-upload="false" :on-update:file-list="onUpdateFileB">
-          <n-upload-dragger>
-            <div style="margin-bottom: 12px">
-              <n-icon size="48" :depth="3">
-                <ArchiveOutline />
-              </n-icon>
-            </div>
-            <n-text style="font-size: 16px"> 点击或者拖动文件到该区域 </n-text>
-          </n-upload-dragger>
-        </n-upload>
-      </n-form-item>
-      <n-form-item label="第三步 处理文件并下载">
-        <n-button type="primary" block @click="handleNewSheet">处理文件</n-button>
-      </n-form-item>
-    </n-form>
+    
+    <n-alert type="info">
+      所有文件操作仅存在客户端本地，不会上传任何文件、信息。
+    </n-alert>
+
+    <n-h2 prefix="bar"> <n-text type="primary"> 第一步 选择正畸老顾客excel </n-text> </n-h2>
+    <n-upload multiple directory-dnd :max="1" :default-upload="false" :on-update:file-list="onUpdateFileA">
+      <n-upload-dragger>
+        <div style="margin-bottom: 12px">
+          <n-icon size="48" :depth="3">
+            <ArchiveOutline />
+          </n-icon>
+        </div>
+        <n-text style="font-size: 16px"> 点击或者拖动文件到该区域 </n-text>
+      </n-upload-dragger>
+    </n-upload>
+    <n-h2 prefix="bar"> <n-text type="primary"> 第二步 选择每月统计的患者查询excel </n-text> </n-h2>
+    <n-upload multiple directory-dnd :max="1" :default-upload="false" :on-update:file-list="onUpdateFileB">
+      <n-upload-dragger>
+        <div style="margin-bottom: 12px">
+          <n-icon size="48" :depth="3">
+            <ArchiveOutline />
+          </n-icon>
+        </div>
+        <n-text style="font-size: 16px"> 点击或者拖动文件到该区域 </n-text>
+      </n-upload-dragger>
+    </n-upload>
+    <n-h2 prefix="bar"> <n-text type="primary"> 第三步 点击按钮开始处理文件并下载 </n-text> </n-h2>
+    <n-button type="primary" :disabled='disabledBtn' block @click="handleNewSheet">处理文件并下载</n-button>
   </n-space>
 </template>
 
-<style scoped></style>
+<style scoped>
+:deep(.n-h2){
+  margin-top: 20px;
+  margin-bottom: 0;
+}
+</style>
